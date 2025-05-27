@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Zona Crítica - Laboratorio Clínico</title>
+  <style>
+    body {
+      background-color: #0d1b2a;
+      color: #00ffe1;
+      font-family: 'Consolas', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 10px;
+      color: #ff006e;
+    }
+    input {
+      background-color: #1b263b;
+      color: #00ffe1;
+      border: 2px solid #00ffe1;
+      font-size: 22px;
+      padding: 10px;
+      text-align: center;
+      width: 320px;
+      margin-top: 10px;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    #timer, #globalTimer {
+      margin-top: 15px;
+      font-size: 40px;
+      font-weight: bold;
+      color: #ff006e;
+      text-shadow: 1px 1px #000;
+    }
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 ACCESO RESTRINGIDO - ZONA CRÍTICA</h1>
+  <p>Introduce el código clínico para desbloquear la estación de cálculo:</p>
+  <input type="text" id="codeInput" placeholder="Ej: TRX-B7">
+  <div id="globalTimer"></div>
+  <div id="timer"></div>
+  <div id="message"></div>
+
+  <audio id="labSound" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_7d86b9b2fc.mp3?filename=computer-lab-ambient-125214.mp3" type="audio/mpeg">
+    Tu navegador no soporta audio HTML5.
+  </audio>
+
+  <script>
+    const correctCode = "COA-HD3";
+    const redirectURL = "https://view.genially.com/683436675a374c922cadf407/interactive-content-etapa-4";
+    const inputBox = document.getElementById("codeInput");
+    const messageDiv = document.getElementById("message");
+    const timerDiv = document.getElementById("timer");
+    const globalTimerDiv = document.getElementById("globalTimer");
+    const audio = document.getElementById("labSound");
+    let failCount = 0;
+    let locked = false;
+    let globalTimerStarted = false;
+
+    function startGlobalTimer(duration) {
+      let time = duration;
+      const interval = setInterval(() => {
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        globalTimerDiv.innerText = `🕒 ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        time--;
+        if (time < 0) {
+          clearInterval(interval);
+          window.location.href = "https://view.genially.com/68343b88dcff58001909d16f/interactive-content-tiempo-agotado-fallo-de-mision";
+        }
+      }, 1000);
+    }
+
+    function startCooldown(seconds) {
+      locked = true;
+      inputBox.disabled = true;
+      let remaining = seconds;
+      timerDiv.innerText = `⏳ Espera: ${remaining}s`;
+      const interval = setInterval(() => {
+        remaining--;
+        timerDiv.innerText = `⏳ Espera: ${remaining}s`;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          locked = false;
+          failCount = 0;
+          timerDiv.innerText = "Intenta de nuevo.";
+          inputBox.disabled = false;
+        }
+      }, 1000);
+    }
+
+    inputBox.addEventListener("keyup", function(event) {
+      if (event.key === "Enter" && !locked) {
+        const input = event.target.value.trim().toUpperCase();
+
+        if (!globalTimerStarted) {
+          globalTimerStarted = true;
+          startGlobalTimer(60 * 60); // 60 minutos
+          audio.play().catch(() => {
+            messageDiv.innerHTML += "<p style='color:yellow;'>🔇 Haz clic para activar el sonido.</p>";
+          });
+        }
+
+        if (input === correctCode) {
+          messageDiv.innerHTML = "<h2 style='color:#00ff88;'>✔️ CÓDIGO CORRECTO</h2><p>Redirigiendo a la siguiente fase...</p>";
+          timerDiv.innerText = "";
+          setTimeout(() => {
+            window.location.href = redirectURL;
+          }, 3000);
+        } else {
+          failCount++;
+          if (failCount >= 3) {
+            messageDiv.innerHTML = "<h2 style='color:orange;'>❌ Demasiados intentos</h2><p>Calma. Podéis volver a probar en 60 segundos.</p>";
+            startCooldown(60);
+          } else {
+            messageDiv.innerHTML = "<p style='color:red;'>❌ Código incorrecto. Revisad bien los resultados.</p>";
+          }
+        }
+      }
+    });
+
+    document.body.addEventListener("click", () => {
+      audio.play().catch(() => {
+        console.log("Audio bloqueado. Requiere interacción.");
+      });
+    });
+  </script>
+</body>
+</html>
